@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  mqtt-broker:
+    image: eclipse-mosquitto
+    container_name: mqtt-broker
+    ports:
+      - "1883:1883" # MQTT default port
+
+
+  opc-clientwrite:
+    build:
+      context: ./clientwrite
+    container_name: opc-clientwrite
+    environment:
+      - OPC_SERVER_URL=opc.tcp://host.docker.internal:62640/IntegrationObjects/ServerSimulator
+
+  opc-clientread:
+    build:
+      context: ./clientread
+    container_name: opc-clientread
+    depends_on:
+      - mqtt-broker
+    environment:
+      - OPC_SERVER_URL=opc.tcp://host.docker.internal:62640/IntegrationObjects/ServerSimulator
+      - MQTT_BROKER_HOST=mqtt-broker
+      - MQTT_BROKER_PORT=1883
+      - MQTT_TOPIC=sensor/data
+
+  node-red:
+    image: nodered/node-red
+    container_name: node-red
+    ports:
+      - "1880:1880" # Node-RED web UI
+    depends_on:
+      - mqtt-broker
